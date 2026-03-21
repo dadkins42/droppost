@@ -62,9 +62,14 @@ struct EditPostView: View {
                             Text("Loading photos...")
                                 .foregroundStyle(.secondary)
                         }
-                    } else if existingImages.isEmpty && removedImageFilenames.count == originalPost.images.count {
-                        Text("No photos")
-                            .foregroundStyle(.secondary)
+                    } else if existingImages.isEmpty {
+                        if originalPost.images.isEmpty {
+                            Text("No photos")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("Could not load \(originalPost.images.count) photo(s)")
+                                .foregroundStyle(.secondary)
+                        }
                     } else {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 10) {
