@@ -43,6 +43,20 @@ actor GitHubService {
         return (decodedData, sha)
     }
 
+    // Download raw file content (no size limit, good for images)
+    func fetchRawFile(path: String) async throws -> Data {
+        let url = URL(string: "https://raw.githubusercontent.com/\(owner)/\(repo)/main/\(path)")!
+        var request = URLRequest(url: url)
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw GitHubError.invalidResponse
+        }
+        return data
+    }
+
     func fetchJSON<T: Decodable>(_ type: T.Type, path: String) async throws -> (value: T, sha: String) {
         let (data, sha) = try await fetchFile(path: path)
         let decoded = try JSONDecoder().decode(T.self, from: data)

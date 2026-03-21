@@ -209,7 +209,7 @@ struct EditPostView: View {
 
         for filename in originalPost.images {
             do {
-                let (data, _) = try await settingsVM.gitHubService.fetchFile(
+                let data = try await settingsVM.gitHubService.fetchRawFile(
                     path: "blogs/\(blog.slug)/\(filename)"
                 )
                 if let image = UIImage(data: data) {
