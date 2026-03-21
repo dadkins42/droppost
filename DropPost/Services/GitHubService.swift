@@ -214,10 +214,17 @@ actor GitHubService {
     }
 
     func uploadImage(data: Data, blogSlug: String, filename: String) async throws {
+        let path = "blogs/\(blogSlug)/\(filename)"
+        // Check if file already exists (need SHA to update)
+        var existingSHA: String?
+        if let (_, sha) = try? await fetchFile(path: path) {
+            existingSHA = sha
+        }
         try await createOrUpdateFile(
-            path: "blogs/\(blogSlug)/\(filename)",
+            path: path,
             content: data,
-            message: "Upload image: \(filename)"
+            message: existingSHA != nil ? "Update image: \(filename)" : "Upload image: \(filename)",
+            sha: existingSHA
         )
     }
 
