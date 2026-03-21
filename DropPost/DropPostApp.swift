@@ -7,17 +7,20 @@ struct DropPostApp: App {
 
     var body: some Scene {
         WindowGroup {
-            if settingsVM.isConfigured {
-                MainTabView()
-                    .environmentObject(settingsVM)
-                    .environmentObject(blogVM)
-                    .task {
-                        await blogVM.loadBlogs(using: settingsVM.gitHubService)
-                    }
-            } else {
-                SetupView()
-                    .environmentObject(settingsVM)
+            Group {
+                if settingsVM.isConfigured {
+                    MainTabView()
+                        .environmentObject(settingsVM)
+                        .environmentObject(blogVM)
+                        .task {
+                            await blogVM.loadBlogs(using: settingsVM.gitHubService)
+                        }
+                } else {
+                    SetupView()
+                        .environmentObject(settingsVM)
+                }
             }
+            .preferredColorScheme(settingsVM.darkMode ? .dark : .light)
         }
     }
 }

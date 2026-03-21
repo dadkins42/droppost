@@ -17,18 +17,20 @@ struct BlogListView: View {
                 }
 
                 ForEach(blogVM.blogs) { blog in
-                    HStack {
-                        Text(blog.emoji)
-                            .font(.title2)
-                        VStack(alignment: .leading) {
-                            Text(blog.title)
-                                .font(.headline)
-                            Text(blog.description)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                    NavigationLink(value: blog) {
+                        HStack {
+                            Text(blog.emoji)
+                                .font(.title2)
+                            VStack(alignment: .leading) {
+                                Text(blog.title)
+                                    .font(.headline)
+                                Text(blog.description)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
+                        .padding(.vertical, 4)
                     }
-                    .padding(.vertical, 4)
                 }
 
                 if let error = blogVM.errorMessage {
@@ -38,6 +40,9 @@ struct BlogListView: View {
                 }
             }
             .navigationTitle("Blogs")
+            .navigationDestination(for: Blog.self) { blog in
+                PostListView(blog: blog)
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {

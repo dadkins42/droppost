@@ -185,10 +185,17 @@ actor GitHubService {
         </html>
         """
         let data = Data(html.utf8)
+        let path = "blogs/\(blogSlug)/\(post.slug).html"
+        // Try to get existing SHA for updates
+        var existingSHA: String?
+        if let (_, sha) = try? await fetchFile(path: path) {
+            existingSHA = sha
+        }
         try await createOrUpdateFile(
-            path: "blogs/\(blogSlug)/\(post.slug).html",
+            path: path,
             content: data,
-            message: "New post: \(post.title)"
+            message: existingSHA != nil ? "Update post: \(post.title)" : "New post: \(post.title)",
+            sha: existingSHA
         )
     }
 

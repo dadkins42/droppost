@@ -42,6 +42,10 @@ struct SettingsView: View {
                     }
                 }
 
+                Section("Appearance") {
+                    Toggle("Dark Mode", isOn: $settingsVM.darkMode)
+                }
+
                 Section("Website") {
                     Link("View Site", destination: URL(string: "https://\(settingsVM.owner).github.io/\(settingsVM.repo)/")!)
                 }
