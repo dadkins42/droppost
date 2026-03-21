@@ -1,6 +1,7 @@
 import Foundation
 import SwiftUI
 import PhotosUI
+import Photos
 import CoreLocation
 
 @MainActor
@@ -29,8 +30,8 @@ class ComposeViewModel: ObservableObject {
         for item in selectedPhotos {
             if let data = try? await item.loadTransferable(type: Data.self),
                let uiImage = UIImage(data: data) {
-                // Extract date from EXIF
-                let dateTaken = Self.extractDateFromImageData(data)
+                // Get date from PHAsset (most reliable) or EXIF fallback
+                let dateTaken = Self.getDateFromPickerItem(item) ?? Self.extractDateFromImageData(data)
                 // Resize to max 1200px wide for reasonable file size
                 let resized = resizeImage(uiImage, maxWidth: 1200)
                 if let jpegData = resized.jpegData(compressionQuality: 0.7) {
@@ -39,6 +40,12 @@ class ComposeViewModel: ObservableObject {
             }
         }
         loadedImages = newImages
+    }
+
+    static func getDateFromPickerItem(_ item: PhotosPickerItem) -> Date? {
+        guard let assetId = item.itemIdentifier else { return nil }
+        let assets = PHAsset.fetchAssets(withLocalIdentifiers: [assetId], options: nil)
+        return assets.firstObject?.creationDate
     }
 
     static func extractDateFromImageData(_ data: Data) -> Date? {

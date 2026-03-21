@@ -1,5 +1,6 @@
 import SwiftUI
 import PhotosUI
+import Photos
 
 struct EditPostView: View {
     @EnvironmentObject var settingsVM: SettingsViewModel
@@ -241,7 +242,7 @@ struct EditPostView: View {
         for item in selectedPhotos {
             if let data = try? await item.loadTransferable(type: Data.self),
                let uiImage = UIImage(data: data) {
-                let dateTaken = ComposeViewModel.extractDateFromImageData(data)
+                let dateTaken = ComposeViewModel.getDateFromPickerItem(item) ?? ComposeViewModel.extractDateFromImageData(data)
                 let resized = resizeImage(uiImage, maxWidth: 1200)
                 if let jpegData = resized.jpegData(compressionQuality: 0.7) {
                     loaded.append((id: UUID(), uiImage: resized, data: jpegData, dateTaken: dateTaken))
