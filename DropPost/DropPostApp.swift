@@ -1,4 +1,5 @@
 import SwiftUI
+import Photos
 
 @main
 struct DropPostApp: App {
@@ -21,6 +22,9 @@ struct DropPostApp: App {
                 }
             }
             .preferredColorScheme(settingsVM.darkMode ? .dark : .light)
+            .task {
+                PHPhotoLibrary.requestAuthorization(for: .readWrite) { _ in }
+            }
         }
     }
 }

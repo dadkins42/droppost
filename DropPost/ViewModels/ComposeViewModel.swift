@@ -44,6 +44,14 @@ class ComposeViewModel: ObservableObject {
 
     static func getDateFromPickerItem(_ item: PhotosPickerItem) -> Date? {
         guard let assetId = item.itemIdentifier else { return nil }
+        // Request limited access if not already authorized
+        let status = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+        if status == .notDetermined {
+            // Can't do async request here, so return nil and rely on EXIF
+            PHPhotoLibrary.requestAuthorization(for: .readWrite) { _ in }
+            return nil
+        }
+        guard status == .authorized || status == .limited else { return nil }
         let assets = PHAsset.fetchAssets(withLocalIdentifiers: [assetId], options: nil)
         return assets.firstObject?.creationDate
     }
