@@ -1,0 +1,187 @@
+import Foundation
+import SwiftUI
+import PhotosUI
+import CoreLocation
+
+@MainActor
+class ComposeViewModel: ObservableObject {
+    @Published var title: String = ""
+    @Published var body: String = ""
+    @Published var selectedPhotos: [PhotosPickerItem] = []
+    @Published var loadedImages: [SelectedImage] = []
+    @Published var youtubeURL: String = ""
+    @Published var isPublishing = false
+    @Published var publishSuccess = false
+    @Published var errorMessage: String?
+    @Published var publishProgress: String = ""
+
+    private let locationManager = LocationHelper()
+
+    struct SelectedImage: Identifiable {
+        let id = UUID()
+        let uiImage: UIImage
+        let data: Data
+    }
+
+    func loadImages() async {
+        var newImages: [SelectedImage] = []
+        for item in selectedPhotos {
+            if let data = try? await item.loadTransferable(type: Data.self),
+               let uiImage = UIImage(data: data) {
+                // Resize to max 1200px wide for reasonable file size
+                let resized = resizeImage(uiImage, maxWidth: 1200)
+                if let jpegData = resized.jpegData(compressionQuality: 0.7) {
+                    newImages.append(SelectedImage(uiImage: resized, data: jpegData))
+                }
+            }
+        }
+        loadedImages = newImages
+    }
+
+    func removeImage(at index: Int) {
+        guard index < loadedImages.count else { return }
+        loadedImages.remove(at: index)
+        if index < selectedPhotos.count {
+            selectedPhotos.remove(at: index)
+        }
+    }
+
+    func publish(to blog: Blog, using service: GitHubService) async {
+        guard !title.isEmpty else {
+            errorMessage = "Please enter a title"
+            return
+        }
+        guard !body.isEmpty else {
+            errorMessage = "Please write something"
+            return
+        }
+
+        isPublishing = true
+        errorMessage = nil
+        publishProgress = "Preparing post..."
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        let dateStr = dateFormatter.string(from: Date())
+
+        let titleSlug = title.lowercased()
+            .replacingOccurrences(of: " ", with: "-")
+            .replacingOccurrences(of: "'", with: "")
+            .filter { $0.isLetter || $0.isNumber || $0 == "-" }
+        let slug = "\(dateStr)-\(titleSlug)"
+
+        // Prepare image data
+        var imageFilenames: [String] = []
+        var imageUploads: [(filename: String, data: Data)] = []
+        for (index, img) in loadedImages.enumerated() {
+            let filename = "\(slug)-img\(index + 1).jpg"
+            imageFilenames.append(filename)
+            imageUploads.append((filename: filename, data: img.data))
+        }
+
+        // Get location
+        let location = locationManager.currentLocationString
+
+        // Build excerpt
+        let excerpt = String(body.prefix(150)) + (body.count > 150 ? "..." : "")
+
+        // Collect videos
+        var videos: [String] = []
+        if !youtubeURL.isEmpty {
+            videos.append(youtubeURL)
+        }
+
+        let post = Post(
+            slug: slug,
+            title: title,
+            date: dateStr,
+            excerpt: excerpt,
+            content: body,
+            location: location,
+            images: imageFilenames,
+            videos: videos
+        )
+
+        do {
+            // Upload images
+            for (index, upload) in imageUploads.enumerated() {
+                publishProgress = "Uploading image \(index + 1) of \(imageUploads.count)..."
+                try await service.uploadImage(data: upload.data, blogSlug: blog.slug, filename: upload.filename)
+            }
+
+            // Create post page
+            publishProgress = "Creating post page..."
+            try await service.createPostPage(post: post, blogSlug: blog.slug)
+
+            // Update posts.json
+            publishProgress = "Updating blog..."
+            let (existingPosts, sha) = try await service.fetchPosts(blogSlug: blog.slug)
+            var updatedPosts = existingPosts
+            updatedPosts.posts.insert(post, at: 0)
+            try await service.updatePosts(updatedPosts, blogSlug: blog.slug, sha: sha)
+
+            publishProgress = "Published!"
+            publishSuccess = true
+            isPublishing = false
+
+            // Reset form
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                self.resetForm()
+            }
+        } catch {
+            errorMessage = "Publish failed: \(error.localizedDescription)"
+            isPublishing = false
+            publishProgress = ""
+        }
+    }
+
+    func resetForm() {
+        title = ""
+        body = ""
+        selectedPhotos = []
+        loadedImages = []
+        youtubeURL = ""
+        publishSuccess = false
+        publishProgress = ""
+        errorMessage = nil
+    }
+
+    private func resizeImage(_ image: UIImage, maxWidth: CGFloat) -> UIImage {
+        let size = image.size
+        guard size.width > maxWidth else { return image }
+
+        let scale = maxWidth / size.width
+        let newSize = CGSize(width: maxWidth, height: size.height * scale)
+
+        let renderer = UIGraphicsImageRenderer(size: newSize)
+        return renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: newSize))
+        }
+    }
+}
+
+// Simple location helper
+class LocationHelper: NSObject, CLLocationManagerDelegate {
+    private let manager = CLLocationManager()
+    private(set) var currentLocationString: String?
+
+    override init() {
+        super.init()
+        manager.delegate = self
+        manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
+        manager.requestWhenInUseAuthorization()
+        manager.startUpdatingLocation()
+    }
+
+    func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
+        guard let location = locations.last else { return }
+        let geocoder = CLGeocoder()
+        geocoder.reverseGeocodeLocation(location) { [weak self] placemarks, _ in
+            if let place = placemarks?.first {
+                let parts = [place.locality, place.administrativeArea].compactMap { $0 }
+                self?.currentLocationString = parts.joined(separator: ", ")
+            }
+        }
+        manager.stopUpdatingLocation()
+    }
+}
