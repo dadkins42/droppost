@@ -172,29 +172,31 @@ struct EditPostView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button("Cancel") {
+                    Button(saveSuccess ? "Done" : "Cancel") {
                         dismiss()
                     }
                 }
 
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        Task { await savePost() }
-                    } label: {
-                        if isSaving {
-                            VStack(spacing: 2) {
-                                ProgressView()
-                                if !saveProgress.isEmpty {
-                                    Text(saveProgress)
-                                        .font(.caption2)
+                    if !saveSuccess {
+                        Button {
+                            Task { await savePost() }
+                        } label: {
+                            if isSaving {
+                                VStack(spacing: 2) {
+                                    ProgressView()
+                                    if !saveProgress.isEmpty {
+                                        Text(saveProgress)
+                                            .font(.caption2)
+                                    }
                                 }
+                            } else {
+                                Text("Save")
+                                    .bold()
                             }
-                        } else {
-                            Text("Save")
-                                .bold()
                         }
+                        .disabled(isSaving)
                     }
-                    .disabled(isSaving)
                 }
             }
             .overlay {
@@ -325,6 +327,7 @@ struct EditPostView: View {
             }
         } catch {
             errorMessage = "Save failed: \(error.localizedDescription)"
+            saveProgress = ""
         }
 
         isSaving = false
