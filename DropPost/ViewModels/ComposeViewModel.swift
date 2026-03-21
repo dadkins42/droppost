@@ -21,6 +21,7 @@ class ComposeViewModel: ObservableObject {
         let id = UUID()
         let uiImage: UIImage
         let data: Data
+        let dateTaken: Date?
     }
 
     func loadImages() async {
@@ -28,14 +29,35 @@ class ComposeViewModel: ObservableObject {
         for item in selectedPhotos {
             if let data = try? await item.loadTransferable(type: Data.self),
                let uiImage = UIImage(data: data) {
+                // Extract date from EXIF
+                let dateTaken = Self.extractDateFromImageData(data)
                 // Resize to max 1200px wide for reasonable file size
                 let resized = resizeImage(uiImage, maxWidth: 1200)
                 if let jpegData = resized.jpegData(compressionQuality: 0.7) {
-                    newImages.append(SelectedImage(uiImage: resized, data: jpegData))
+                    newImages.append(SelectedImage(uiImage: resized, data: jpegData, dateTaken: dateTaken))
                 }
             }
         }
         loadedImages = newImages
+    }
+
+    static func extractDateFromImageData(_ data: Data) -> Date? {
+        guard let source = CGImageSourceCreateWithData(data as CFData, nil),
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any],
+              let exif = properties[kCGImagePropertyExifDictionary as String] as? [String: Any],
+              let dateStr = exif[kCGImagePropertyExifDateTimeOriginal as String] as? String else {
+            return nil
+        }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy:MM:dd HH:mm:ss"
+        return formatter.date(from: dateStr)
+    }
+
+    static func formatPhotoDate(_ date: Date?) -> String? {
+        guard let date = date else { return nil }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MMM d, yyyy"
+        return formatter.string(from: date)
     }
 
     func removeImage(at index: Int) {

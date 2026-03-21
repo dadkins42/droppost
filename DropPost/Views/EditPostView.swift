@@ -27,7 +27,7 @@ struct EditPostView: View {
 
     // New images to add
     @State private var selectedPhotos: [PhotosPickerItem] = []
-    @State private var newImages: [(id: UUID, uiImage: UIImage, data: Data)] = []
+    @State private var newImages: [(id: UUID, uiImage: UIImage, data: Data, dateTaken: Date?)] = []
 
     init(post: Post, blog: Blog, postsSHA: String?, allPosts: [Post], onSave: @escaping ([Post], String?) -> Void) {
         self.originalPost = post
@@ -116,24 +116,31 @@ struct EditPostView: View {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 10) {
                                 ForEach(Array(newImages.enumerated()), id: \.element.id) { index, img in
-                                    ZStack(alignment: .topTrailing) {
-                                        Image(uiImage: img.uiImage)
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(width: 100, height: 100)
-                                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    VStack(spacing: 4) {
+                                        ZStack(alignment: .topTrailing) {
+                                            Image(uiImage: img.uiImage)
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fill)
+                                                .frame(width: 100, height: 100)
+                                                .clipShape(RoundedRectangle(cornerRadius: 8))
 
-                                        Button {
-                                            newImages.remove(at: index)
-                                            if index < selectedPhotos.count {
-                                                selectedPhotos.remove(at: index)
+                                            Button {
+                                                newImages.remove(at: index)
+                                                if index < selectedPhotos.count {
+                                                    selectedPhotos.remove(at: index)
+                                                }
+                                            } label: {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .foregroundStyle(.white)
+                                                    .background(Circle().fill(.red.opacity(0.8)))
                                             }
-                                        } label: {
-                                            Image(systemName: "xmark.circle.fill")
-                                                .foregroundStyle(.white)
-                                                .background(Circle().fill(.red.opacity(0.8)))
+                                            .offset(x: 4, y: -4)
                                         }
-                                        .offset(x: 4, y: -4)
+                                        if let dateStr = ComposeViewModel.formatPhotoDate(img.dateTaken) {
+                                            Text(dateStr)
+                                                .font(.caption2)
+                                                .foregroundStyle(.secondary)
+                                        }
                                     }
                                 }
                             }
@@ -230,13 +237,14 @@ struct EditPostView: View {
     }
 
     private func loadNewImages() async {
-        var loaded: [(id: UUID, uiImage: UIImage, data: Data)] = []
+        var loaded: [(id: UUID, uiImage: UIImage, data: Data, dateTaken: Date?)] = []
         for item in selectedPhotos {
             if let data = try? await item.loadTransferable(type: Data.self),
                let uiImage = UIImage(data: data) {
+                let dateTaken = ComposeViewModel.extractDateFromImageData(data)
                 let resized = resizeImage(uiImage, maxWidth: 1200)
                 if let jpegData = resized.jpegData(compressionQuality: 0.7) {
-                    loaded.append((id: UUID(), uiImage: resized, data: jpegData))
+                    loaded.append((id: UUID(), uiImage: resized, data: jpegData, dateTaken: dateTaken))
                 }
             }
         }

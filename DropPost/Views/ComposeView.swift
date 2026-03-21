@@ -57,21 +57,28 @@ struct ComposeView: View {
                         ScrollView(.horizontal, showsIndicators: false) {
                             HStack(spacing: 10) {
                                 ForEach(Array(composeVM.loadedImages.enumerated()), id: \.element.id) { index, img in
-                                    ZStack(alignment: .topTrailing) {
-                                        Image(uiImage: img.uiImage)
-                                            .resizable()
-                                            .aspectRatio(contentMode: .fill)
-                                            .frame(width: 100, height: 100)
-                                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    VStack(spacing: 4) {
+                                        ZStack(alignment: .topTrailing) {
+                                            Image(uiImage: img.uiImage)
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fill)
+                                                .frame(width: 100, height: 100)
+                                                .clipShape(RoundedRectangle(cornerRadius: 8))
 
-                                        Button {
-                                            composeVM.removeImage(at: index)
-                                        } label: {
-                                            Image(systemName: "xmark.circle.fill")
-                                                .foregroundStyle(.white)
-                                                .background(Circle().fill(.black.opacity(0.5)))
+                                            Button {
+                                                composeVM.removeImage(at: index)
+                                            } label: {
+                                                Image(systemName: "xmark.circle.fill")
+                                                    .foregroundStyle(.white)
+                                                    .background(Circle().fill(.black.opacity(0.5)))
+                                            }
+                                            .offset(x: 4, y: -4)
                                         }
-                                        .offset(x: 4, y: -4)
+                                        if let dateStr = ComposeViewModel.formatPhotoDate(img.dateTaken) {
+                                            Text(dateStr)
+                                                .font(.caption2)
+                                                .foregroundStyle(.secondary)
+                                        }
                                     }
                                 }
                             }
