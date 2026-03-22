@@ -61,7 +61,7 @@ struct EditPostView: View {
                 }
 
                 // Existing Photos
-                Section("Current Photos") {
+                Section("Current Photos (swipe to see more)") {
                     if isLoadingImages {
                         HStack {
                             ProgressView()
