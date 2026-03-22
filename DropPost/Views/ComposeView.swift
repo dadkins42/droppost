@@ -59,7 +59,7 @@ struct ComposeView: View {
                                 ForEach(Array(composeVM.loadedImages.enumerated()), id: \.element.id) { index, img in
                                     VStack(spacing: 4) {
                                         ZStack(alignment: .topTrailing) {
-                                            Image(uiImage: img.uiImage)
+                                            platformImage(img.image)
                                                 .resizable()
                                                 .aspectRatio(contentMode: .fill)
                                                 .frame(width: 100, height: 100)
@@ -89,9 +89,7 @@ struct ComposeView: View {
 
                 // YouTube (optional)
                 Section("Video (optional)") {
-                    TextField("YouTube URL", text: $composeVM.youtubeURL)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
+                    youtubeField
                 }
 
                 // Error
@@ -104,7 +102,7 @@ struct ComposeView: View {
             }
             .navigationTitle("New Post")
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button {
                         bodyFocused = false
                         Task {
@@ -123,7 +121,7 @@ struct ComposeView: View {
                     .disabled(composeVM.isPublishing || blogVM.selectedBlog == nil)
                 }
 
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .automatic) {
                     if !composeVM.publishProgress.isEmpty {
                         Text(composeVM.publishProgress)
                             .font(.caption)
@@ -145,5 +143,17 @@ struct ComposeView: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private var youtubeField: some View {
+        let field = TextField("YouTube URL", text: $composeVM.youtubeURL)
+        #if os(iOS)
+        field
+            .keyboardType(.URL)
+            .textInputAutocapitalization(.never)
+        #else
+        field
+        #endif
     }
 }

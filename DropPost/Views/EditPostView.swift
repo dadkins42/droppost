@@ -1,6 +1,11 @@
 import SwiftUI
 import PhotosUI
 import Photos
+#if os(iOS)
+import UIKit
+#else
+import AppKit
+#endif
 
 struct EditPostView: View {
     @EnvironmentObject var settingsVM: SettingsViewModel
@@ -22,13 +27,13 @@ struct EditPostView: View {
     @State private var saveSuccess = false
 
     // Existing images (loaded from GitHub)
-    @State private var existingImages: [(filename: String, image: UIImage)] = []
+    @State private var existingImages: [(filename: String, image: PlatformImage)] = []
     @State private var removedImageFilenames: Set<String> = []
     @State private var isLoadingImages = true
 
     // New images to add
     @State private var selectedPhotos: [PhotosPickerItem] = []
-    @State private var newImages: [(id: UUID, uiImage: UIImage, data: Data, dateTaken: Date?)] = []
+    @State private var newImages: [(id: UUID, image: PlatformImage, data: Data, dateTaken: Date?)] = []
 
     init(post: Post, blog: Blog, postsSHA: String?, allPosts: [Post], onSave: @escaping ([Post], String?) -> Void) {
         self.originalPost = post
@@ -77,7 +82,7 @@ struct EditPostView: View {
                                 ForEach(existingImages, id: \.filename) { item in
                                     if !removedImageFilenames.contains(item.filename) {
                                         ZStack(alignment: .topTrailing) {
-                                            Image(uiImage: item.image)
+                                            platformImage(item.image)
                                                 .resizable()
                                                 .aspectRatio(contentMode: .fill)
                                                 .frame(width: 100, height: 100)
@@ -119,7 +124,7 @@ struct EditPostView: View {
                                 ForEach(Array(newImages.enumerated()), id: \.element.id) { index, img in
                                     VStack(spacing: 4) {
                                         ZStack(alignment: .topTrailing) {
-                                            Image(uiImage: img.uiImage)
+                                            platformImage(img.image)
                                                 .resizable()
                                                 .aspectRatio(contentMode: .fill)
                                                 .frame(width: 100, height: 100)
@@ -152,9 +157,7 @@ struct EditPostView: View {
 
                 // Video
                 Section("Video (optional)") {
-                    TextField("YouTube URL", text: $youtubeURL)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
+                    editYoutubeField
                 }
 
                 Section("Location") {
@@ -169,15 +172,17 @@ struct EditPostView: View {
                 }
             }
             .navigationTitle("Edit Post")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button(saveSuccess ? "Done" : "Cancel") {
                         dismiss()
                     }
                 }
 
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .confirmationAction) {
                     if !saveSuccess {
                         Button {
                             Task { await savePost() }
@@ -220,14 +225,14 @@ struct EditPostView: View {
 
     private func loadExistingImages() async {
         isLoadingImages = true
-        var loaded: [(filename: String, image: UIImage)] = []
+        var loaded: [(filename: String, image: PlatformImage)] = []
 
         for filename in originalPost.images {
             do {
                 let data = try await settingsVM.gitHubService.fetchRawFile(
                     path: "blogs/\(blog.slug)/\(filename)"
                 )
-                if let image = UIImage(data: data) {
+                if let image = PlatformImage(data: data) {
                     loaded.append((filename: filename, image: image))
                 }
             } catch {
@@ -240,14 +245,14 @@ struct EditPostView: View {
     }
 
     private func loadNewImages() async {
-        var loaded: [(id: UUID, uiImage: UIImage, data: Data, dateTaken: Date?)] = []
+        var loaded: [(id: UUID, image: PlatformImage, data: Data, dateTaken: Date?)] = []
         for item in selectedPhotos {
             if let data = try? await item.loadTransferable(type: Data.self),
-               let uiImage = UIImage(data: data) {
+               let image = PlatformImage(data: data) {
                 let dateTaken = ComposeViewModel.getDateFromPickerItem(item) ?? ComposeViewModel.extractDateFromImageData(data)
-                let resized = resizeImage(uiImage, maxWidth: 1200)
-                if let jpegData = resized.jpegData(compressionQuality: 0.7) {
-                    loaded.append((id: UUID(), uiImage: resized, data: jpegData, dateTaken: dateTaken))
+                let resized = image.resizedToMaxWidth(1200)
+                if let jpegData = resized.jpegDataCompressed(quality: 0.7) {
+                    loaded.append((id: UUID(), image: resized, data: jpegData, dateTaken: dateTaken))
                 }
             }
         }
@@ -334,14 +339,19 @@ struct EditPostView: View {
         isSaving = false
     }
 
-    private func resizeImage(_ image: UIImage, maxWidth: CGFloat) -> UIImage {
-        let size = image.size
-        guard size.width > maxWidth else { return image }
-        let scale = maxWidth / size.width
-        let newSize = CGSize(width: maxWidth, height: size.height * scale)
-        let renderer = UIGraphicsImageRenderer(size: newSize)
-        return renderer.image { _ in
-            image.draw(in: CGRect(origin: .zero, size: newSize))
-        }
+    private func resizeImage(_ image: PlatformImage, maxWidth: CGFloat) -> PlatformImage {
+        return image.resizedToMaxWidth(maxWidth)
+    }
+
+    @ViewBuilder
+    private var editYoutubeField: some View {
+        let field = TextField("YouTube URL", text: $youtubeURL)
+        #if os(iOS)
+        field
+            .keyboardType(.URL)
+            .textInputAutocapitalization(.never)
+        #else
+        field
+        #endif
     }
 }

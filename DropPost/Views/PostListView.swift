@@ -70,10 +70,12 @@ struct PostListView: View {
                     .font(.caption)
             }
         }
+        #if os(iOS)
         .environment(\.editMode, .constant(isEditMode ? .active : .inactive))
+        #endif
         .navigationTitle("\(blog.emoji) \(blog.title)")
         .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
+            ToolbarItem(placement: .confirmationAction) {
                 HStack(spacing: 16) {
                     Button {
                         isEditMode.toggle()

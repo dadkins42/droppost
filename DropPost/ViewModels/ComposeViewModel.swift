@@ -3,6 +3,11 @@ import SwiftUI
 import PhotosUI
 import Photos
 import CoreLocation
+#if os(iOS)
+import UIKit
+#else
+import AppKit
+#endif
 
 @MainActor
 class ComposeViewModel: ObservableObject {
@@ -20,7 +25,7 @@ class ComposeViewModel: ObservableObject {
 
     struct SelectedImage: Identifiable {
         let id = UUID()
-        let uiImage: UIImage
+        let image: PlatformImage
         let data: Data
         let dateTaken: Date?
     }
@@ -29,13 +34,13 @@ class ComposeViewModel: ObservableObject {
         var newImages: [SelectedImage] = []
         for item in selectedPhotos {
             if let data = try? await item.loadTransferable(type: Data.self),
-               let uiImage = UIImage(data: data) {
+               let image = PlatformImage(data: data) {
                 // Get date from PHAsset (most reliable) or EXIF fallback
                 let dateTaken = Self.getDateFromPickerItem(item) ?? Self.extractDateFromImageData(data)
                 // Resize to max 1200px wide for reasonable file size
-                let resized = resizeImage(uiImage, maxWidth: 1200)
-                if let jpegData = resized.jpegData(compressionQuality: 0.7) {
-                    newImages.append(SelectedImage(uiImage: resized, data: jpegData, dateTaken: dateTaken))
+                let resized = image.resizedToMaxWidth(1200)
+                if let jpegData = resized.jpegDataCompressed(quality: 0.7) {
+                    newImages.append(SelectedImage(image: resized, data: jpegData, dateTaken: dateTaken))
                 }
             }
         }
@@ -183,17 +188,8 @@ class ComposeViewModel: ObservableObject {
         errorMessage = nil
     }
 
-    private func resizeImage(_ image: UIImage, maxWidth: CGFloat) -> UIImage {
-        let size = image.size
-        guard size.width > maxWidth else { return image }
-
-        let scale = maxWidth / size.width
-        let newSize = CGSize(width: maxWidth, height: size.height * scale)
-
-        let renderer = UIGraphicsImageRenderer(size: newSize)
-        return renderer.image { _ in
-            image.draw(in: CGRect(origin: .zero, size: newSize))
-        }
+    private func resizeImage(_ image: PlatformImage, maxWidth: CGFloat) -> PlatformImage {
+        return image.resizedToMaxWidth(maxWidth)
     }
 }
 

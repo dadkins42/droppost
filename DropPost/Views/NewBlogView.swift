@@ -58,12 +58,14 @@ struct NewBlogView: View {
                 }
             }
             .navigationTitle("New Blog")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button("Create") {
                         Task {
                             let success = await blogVM.createBlog(

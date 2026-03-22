@@ -25,30 +25,21 @@ struct SetupView: View {
                         Text("GitHub Token")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        SecureField("ghp_xxxx...", text: $token)
-                            .textFieldStyle(.roundedBorder)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
+                        tokenField
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text("GitHub Username")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        TextField("Username", text: $owner)
-                            .textFieldStyle(.roundedBorder)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
+                        ownerField
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Repository Name")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        TextField("Repository", text: $repo)
-                            .textFieldStyle(.roundedBorder)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
+                        repoField
                     }
                 }
                 .padding(.horizontal, 32)
@@ -71,5 +62,41 @@ struct SetupView: View {
                 Spacer()
             }
         }
+    }
+
+    @ViewBuilder
+    private var tokenField: some View {
+        let field = SecureField("ghp_xxxx...", text: $token)
+            .textFieldStyle(.roundedBorder)
+            .autocorrectionDisabled()
+        #if os(iOS)
+        field.textInputAutocapitalization(.never)
+        #else
+        field
+        #endif
+    }
+
+    @ViewBuilder
+    private var ownerField: some View {
+        let field = TextField("Username", text: $owner)
+            .textFieldStyle(.roundedBorder)
+            .autocorrectionDisabled()
+        #if os(iOS)
+        field.textInputAutocapitalization(.never)
+        #else
+        field
+        #endif
+    }
+
+    @ViewBuilder
+    private var repoField: some View {
+        let field = TextField("Repository", text: $repo)
+            .textFieldStyle(.roundedBorder)
+            .autocorrectionDisabled()
+        #if os(iOS)
+        field.textInputAutocapitalization(.never)
+        #else
+        field
+        #endif
     }
 }

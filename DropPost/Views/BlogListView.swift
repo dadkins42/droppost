@@ -44,7 +44,7 @@ struct BlogListView: View {
                 PostListView(blog: blog)
             }
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .confirmationAction) {
                     Button {
                         showNewBlog = true
                     } label: {
@@ -52,7 +52,7 @@ struct BlogListView: View {
                     }
                 }
 
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button {
                         Task {
                             await blogVM.loadBlogs(using: settingsVM.gitHubService)
