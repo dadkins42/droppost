@@ -22,9 +22,15 @@ struct DropPostApp: App {
                 }
             }
             .preferredColorScheme(settingsVM.darkMode ? .dark : .light)
+            #if os(macOS)
+            .frame(minWidth: 700, minHeight: 500)
+            #endif
             .task {
                 PHPhotoLibrary.requestAuthorization(for: .readWrite) { _ in }
             }
         }
+        #if os(macOS)
+        .defaultSize(width: 900, height: 700)
+        #endif
     }
 }
