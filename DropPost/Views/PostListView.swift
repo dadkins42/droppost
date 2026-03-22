@@ -107,6 +107,9 @@ struct PostListView: View {
                 self.postsSHA = newSHA
             }
             .environmentObject(settingsVM)
+            #if os(macOS)
+            .frame(minWidth: 600, minHeight: 500)
+            #endif
         }
         .alert("Delete Post?", isPresented: $showDeleteConfirm) {
             Button("Cancel", role: .cancel) {

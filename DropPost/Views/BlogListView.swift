@@ -64,6 +64,9 @@ struct BlogListView: View {
             }
             .sheet(isPresented: $showNewBlog) {
                 NewBlogView()
+                #if os(macOS)
+                .frame(minWidth: 450, minHeight: 350)
+                #endif
             }
         }
     }
