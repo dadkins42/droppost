@@ -328,6 +328,7 @@ struct EditPostView: View {
         } catch {
             errorMessage = "Save failed: \(error.localizedDescription)"
             saveProgress = ""
+            print("Edit save error: \(error)")
         }
 
         isSaving = false

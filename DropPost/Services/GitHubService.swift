@@ -82,12 +82,14 @@ actor GitHubService {
 
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
-        let (_, response) = try await URLSession.shared.data(for: request)
+        let (responseData, response) = try await URLSession.shared.data(for: request)
         guard let httpResponse = response as? HTTPURLResponse else {
             throw GitHubError.invalidResponse
         }
         guard (200...201).contains(httpResponse.statusCode) else {
-            throw GitHubError.httpError(httpResponse.statusCode)
+            let errorBody = String(data: responseData, encoding: .utf8) ?? "no body"
+            print("GitHub API error \(httpResponse.statusCode) for \(path): \(errorBody)")
+            throw GitHubError.httpError(httpResponse.statusCode, detail: errorBody)
         }
     }
 
@@ -249,13 +251,17 @@ actor GitHubService {
 
 enum GitHubError: LocalizedError {
     case invalidResponse
-    case httpError(Int)
+    case httpError(Int, detail: String? = nil)
     case invalidContent
 
     var errorDescription: String? {
         switch self {
         case .invalidResponse: return "Invalid response from GitHub"
-        case .httpError(let code): return "GitHub API error: \(code)"
+        case .httpError(let code, let detail):
+            if let detail = detail {
+                return "GitHub API error \(code): \(detail)"
+            }
+            return "GitHub API error: \(code)"
         case .invalidContent: return "Could not decode file content"
         }
     }
