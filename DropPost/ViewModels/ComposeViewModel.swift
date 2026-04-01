@@ -145,22 +145,21 @@ class ComposeViewModel: ObservableObject {
         )
 
         do {
-            // Upload images
-            for (index, upload) in imageUploads.enumerated() {
-                publishProgress = "Uploading image \(index + 1) of \(imageUploads.count)..."
-                try await service.uploadImage(data: upload.data, blogSlug: blog.slug, filename: upload.filename)
-            }
+            // Generate post HTML
+            let postHTML = await service.generatePostHTML(post: post, blogSlug: blog.slug)
 
-            // Create post page
-            publishProgress = "Creating post page..."
-            try await service.createPostPage(post: post, blogSlug: blog.slug)
-
-            // Update posts.json
-            publishProgress = "Updating blog..."
-            let (existingPosts, sha) = try await service.fetchPosts(blogSlug: blog.slug)
-            var updatedPosts = existingPosts
-            updatedPosts.posts.insert(post, at: 0)
-            try await service.updatePosts(updatedPosts, blogSlug: blog.slug, sha: sha)
+            // Publish everything in a single atomic commit
+            try await service.atomicPublishPost(
+                post,
+                to: blog.slug,
+                imageData: imageUploads,
+                postHTML: postHTML,
+                progressCallback: { @Sendable [weak self] progress in
+                    Task { @MainActor in
+                        self?.publishProgress = progress
+                    }
+                }
+            )
 
             publishProgress = "Published!"
             publishSuccess = true

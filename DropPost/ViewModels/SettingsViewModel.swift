@@ -17,8 +17,8 @@ class SettingsViewModel: ObservableObject {
     }
 
     func save(token: String, owner: String, repo: String) {
-        self.token = token
-        self.owner = owner
-        self.repo = repo
+        self.token = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.owner = owner.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.repo = repo.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

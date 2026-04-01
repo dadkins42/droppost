@@ -7,6 +7,17 @@ struct SettingsView: View {
     @State private var showResetConfirm = false
 
     var body: some View {
+        #if os(macOS)
+        settingsBody
+            .alert("Reset Configuration?", isPresented: $showResetConfirm) {
+                Button("Cancel", role: .cancel) {}
+                Button("Reset", role: .destructive) {
+                    settingsVM.token = ""
+                }
+            } message: {
+                Text("This will clear your GitHub token. You'll need to set it up again.")
+            }
+        #else
         NavigationStack {
             settingsBody
                 .navigationTitle("Settings")
@@ -19,6 +30,7 @@ struct SettingsView: View {
                     Text("This will clear your GitHub token. You'll need to set it up again.")
                 }
         }
+        #endif
     }
 
     @ViewBuilder
@@ -77,7 +89,7 @@ struct SettingsView: View {
             }
             .frame(maxWidth: 500)
             .padding(32)
-            .frame(maxWidth: .infinity, alignment: .center)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
         #else
         Form {

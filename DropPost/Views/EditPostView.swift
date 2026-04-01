@@ -303,29 +303,26 @@ struct EditPostView: View {
         }
 
         do {
-            // Upload new images
-            for (index, upload) in newImageUploads.enumerated() {
-                saveProgress = "Uploading image \(index + 1) of \(newImageUploads.count)..."
-                try await settingsVM.gitHubService.uploadImage(
-                    data: upload.data,
-                    blogSlug: blog.slug,
-                    filename: upload.filename
-                )
-            }
+            // Generate updated post HTML
+            let postHTML = await settingsVM.gitHubService.generatePostHTML(post: updatedPost, blogSlug: blog.slug)
 
-            // Update posts.json
-            saveProgress = "Updating post..."
-            let (_, freshSHA) = try await settingsVM.gitHubService.fetchPosts(blogSlug: blog.slug)
-            let postsManifest = PostsManifest(posts: updatedPosts)
-            try await settingsVM.gitHubService.updatePosts(postsManifest, blogSlug: blog.slug, sha: freshSHA)
-
-            // Update the post HTML page
-            saveProgress = "Updating page..."
-            try await settingsVM.gitHubService.createPostPage(post: updatedPost, blogSlug: blog.slug)
+            // Commit all changes (images, HTML, posts.json) atomically
+            saveProgress = "Saving..."
+            try await settingsVM.gitHubService.atomicUpdatePost(
+                updatedPost,
+                blogSlug: blog.slug,
+                allPosts: updatedPosts,
+                newImageData: newImageUploads,
+                postHTML: postHTML,
+                progressCallback: { @Sendable progress in
+                    // Progress updates handled by the service
+                }
+            )
 
             saveProgress = ""
             saveSuccess = true
-            onSave(updatedPosts, freshSHA)
+            // SHA is stale after atomic commit; pass nil so caller re-fetches
+            onSave(updatedPosts, nil)
 
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
                 dismiss()
