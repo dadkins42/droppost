@@ -5,10 +5,15 @@ struct SettingsView: View {
 
     @State private var showToken = false
     @State private var showResetConfirm = false
+    @State private var showPrivacyPolicy = false
 
     var body: some View {
         #if os(macOS)
         settingsBody
+            .sheet(isPresented: $showPrivacyPolicy) {
+                PrivacyPolicyView()
+                    .frame(minWidth: 480, minHeight: 500)
+            }
             .alert("Reset Configuration?", isPresented: $showResetConfirm) {
                 Button("Cancel", role: .cancel) {}
                 Button("Reset", role: .destructive) {
@@ -38,6 +43,23 @@ struct SettingsView: View {
         #if os(macOS)
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
+                GroupBox("Site") {
+                    VStack(alignment: .leading, spacing: 12) {
+                        LabeledContent("Site Name") {
+                            Text(settingsVM.siteName)
+                                .foregroundStyle(.secondary)
+                        }
+                        if !settingsVM.siteTagline.isEmpty {
+                            Divider()
+                            LabeledContent("Tagline") {
+                                Text(settingsVM.siteTagline)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                    .padding(8)
+                }
+
                 GroupBox("GitHub Connection") {
                     VStack(alignment: .leading, spacing: 12) {
                         LabeledContent("Username") {
@@ -82,6 +104,15 @@ struct SettingsView: View {
                         .padding(8)
                 }
 
+                GroupBox("About") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Button("Privacy Policy") {
+                            showPrivacyPolicy = true
+                        }
+                        .padding(8)
+                    }
+                }
+
                 Button("Reset Configuration", role: .destructive) {
                     showResetConfirm = true
                 }
@@ -93,6 +124,24 @@ struct SettingsView: View {
         }
         #else
         Form {
+            Section("Site") {
+                HStack {
+                    Text("Site Name")
+                    Spacer()
+                    Text(settingsVM.siteName)
+                        .foregroundStyle(.secondary)
+                }
+
+                if !settingsVM.siteTagline.isEmpty {
+                    HStack {
+                        Text("Tagline")
+                        Spacer()
+                        Text(settingsVM.siteTagline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+
             Section("GitHub Connection") {
                 HStack {
                     Text("Username")
@@ -132,6 +181,12 @@ struct SettingsView: View {
 
             Section("Website") {
                 Link("View Site", destination: URL(string: "https://\(settingsVM.owner).github.io/\(settingsVM.repo)/")!)
+            }
+
+            Section("About") {
+                NavigationLink("Privacy Policy") {
+                    PrivacyPolicyView()
+                }
             }
 
             Section {

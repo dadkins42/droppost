@@ -4,12 +4,37 @@ actor GitHubService {
     private let token: String
     private let owner: String
     private let repo: String
+    private let siteName: String
+    private let siteTagline: String
     private let baseURL = "https://api.github.com"
 
-    init(token: String, owner: String, repo: String) {
+    init(token: String, owner: String, repo: String, siteName: String = "", siteTagline: String = "") {
         self.token = token
         self.owner = owner
         self.repo = repo
+        self.siteName = siteName
+        self.siteTagline = siteTagline
+    }
+
+    private var siteHeaderHTML: String {
+        let name = siteName.isEmpty ? "My Site" : siteName
+        let words = name.split(separator: " ")
+        let h1: String
+        if words.count >= 2 {
+            let firstPart = words.dropLast().joined(separator: " ")
+            let lastWord = String(words.last!)
+            h1 = "\(firstPart) <span>\(lastWord)</span>"
+        } else {
+            h1 = name
+        }
+        let tagline = siteTagline.isEmpty ? "" : "<p class=\"tagline\">\(siteTagline)</p>"
+        return "<h1>\(h1)</h1>\n    \(tagline)"
+    }
+
+    private var copyrightHTML: String {
+        let year = Calendar.current.component(.year, from: Date())
+        let name = siteName.isEmpty ? "My Site" : siteName
+        return "&copy; \(year) \(name)"
     }
 
     // MARK: - Read Files
@@ -132,13 +157,12 @@ actor GitHubService {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>\(blog.title) - Adkins Family</title>
+          <title>\(blog.title) - \(siteName.isEmpty ? "My Site" : siteName)</title>
           <link rel="stylesheet" href="../../css/style.css">
         </head>
         <body>
           <header class="site-header">
-            <h1>Adkins <span>Family</span></h1>
-            <p class="tagline">Photos &bull; Music &bull; Adventures</p>
+            \(siteHeaderHTML)
           </header>
           <nav class="site-nav">
             <a href="../../index.html">Home</a>
@@ -152,7 +176,7 @@ actor GitHubService {
             </div>
             <div class="post-list" id="post-list"></div>
           </main>
-          <footer class="site-footer">&copy; 2026 Adkins Family</footer>
+          <footer class="site-footer">\(copyrightHTML)</footer>
           <script src="../../js/site.js"></script>
           <script>loadBlogPosts('\(blog.slug)', 'post-list', 'blog-title', 'blog-description', 'page-title');</script>
         </body>
@@ -169,13 +193,12 @@ actor GitHubService {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title id="page-title">\(post.title) - Adkins Family</title>
+          <title id="page-title">\(post.title) - \(siteName.isEmpty ? "My Site" : siteName)</title>
           <link rel="stylesheet" href="../../css/style.css">
         </head>
         <body>
           <header class="site-header">
-            <h1>Adkins <span>Family</span></h1>
-            <p class="tagline">Photos &bull; Music &bull; Adventures</p>
+            \(siteHeaderHTML)
           </header>
           <nav class="site-nav">
             <a href="../../index.html">Home</a>
@@ -194,7 +217,7 @@ actor GitHubService {
               <div class="post-content" id="post-content"></div>
             </article>
           </main>
-          <footer class="site-footer">&copy; 2026 Adkins Family</footer>
+          <footer class="site-footer">\(copyrightHTML)</footer>
           <script src="../../js/site.js"></script>
           <script>loadPost('\(blogSlug)');</script>
         </body>
@@ -540,13 +563,12 @@ actor GitHubService {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title id="page-title">\(post.title) - Adkins Family</title>
+          <title id="page-title">\(post.title) - \(siteName.isEmpty ? "My Site" : siteName)</title>
           <link rel="stylesheet" href="../../css/style.css">
         </head>
         <body>
           <header class="site-header">
-            <h1>Adkins <span>Family</span></h1>
-            <p class="tagline">Photos &bull; Music &bull; Adventures</p>
+            \(siteHeaderHTML)
           </header>
           <nav class="site-nav">
             <a href="../../index.html">Home</a>
@@ -565,7 +587,7 @@ actor GitHubService {
               <div class="post-content" id="post-content"></div>
             </article>
           </main>
-          <footer class="site-footer">&copy; 2026 Adkins Family</footer>
+          <footer class="site-footer">\(copyrightHTML)</footer>
           <script src="../../js/site.js"></script>
           <script>loadPost('\(blogSlug)');</script>
         </body>

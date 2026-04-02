@@ -4,8 +4,10 @@ struct SetupView: View {
     @EnvironmentObject var settingsVM: SettingsViewModel
 
     @State private var token = ""
-    @State private var owner = "dadkins42"
-    @State private var repo = "adkinsfam-site"
+    @State private var owner = ""
+    @State private var repo = ""
+    @State private var siteName = ""
+    @State private var siteTagline = ""
 
     var body: some View {
         NavigationStack {
@@ -22,10 +24,19 @@ struct SetupView: View {
 
                 VStack(spacing: 16) {
                     VStack(alignment: .leading, spacing: 4) {
-                        Text("GitHub Token")
+                        Text("Site Name")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        tokenField
+                        TextField("e.g. My Family Blog", text: $siteName)
+                            .textFieldStyle(.roundedBorder)
+                    }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Site Tagline (optional)")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        TextField("e.g. Photos, Music, Adventures", text: $siteTagline)
+                            .textFieldStyle(.roundedBorder)
                     }
 
                     VStack(alignment: .leading, spacing: 4) {
@@ -41,11 +52,18 @@ struct SetupView: View {
                             .foregroundStyle(.secondary)
                         repoField
                     }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("GitHub Token")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        tokenField
+                    }
                 }
                 .padding(.horizontal, 32)
 
                 Button {
-                    settingsVM.save(token: token, owner: owner, repo: repo)
+                    settingsVM.save(token: token, owner: owner, repo: repo, siteName: siteName, siteTagline: siteTagline)
                 } label: {
                     Text("Get Started")
                         .font(.headline)
@@ -56,7 +74,7 @@ struct SetupView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .padding(.horizontal, 32)
-                .disabled(token.isEmpty)
+                .disabled(token.isEmpty || owner.isEmpty || repo.isEmpty || siteName.isEmpty)
 
                 Spacer()
                 Spacer()

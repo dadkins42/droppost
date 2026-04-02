@@ -15,7 +15,7 @@ struct NewBlogView: View {
         NavigationStack {
             Form {
                 Section("Blog Name") {
-                    TextField("e.g. Adkins Away '26", text: $title)
+                    TextField("e.g. Summer Trip '26", text: $title)
                         .font(.headline)
                 }
 
